@@ -24,6 +24,7 @@
               </v-col>
             </v-row>
 
+            <v-data-table :items="items" :header-props="headerProps"  density="comfortable"></v-data-table>
           </v-sheet>
         </v-card-text>
         <v-card-actions>
@@ -37,6 +38,37 @@
 </template>
 
 <script setup lang="ts">
+
+const headerProps = {
+  style: { backgroundColor: '#140a9a', color:'#FFF' }
+}
+const items = [
+    {
+      name: 'African Elephant',
+      species: 'Loxodonta africana',
+      diet: 'Herbivore',
+      habitat: 'Savanna, Forests',
+    },
+    {
+      name: 'African Elephant',
+      species: 'Loxodonta africana',
+      diet: 'Herbivore',
+      habitat: 'Savanna, Forests',
+    },
+    {
+      name: 'African Elephant',
+      species: 'Loxodonta africana',
+      diet: 'Herbivore',
+      habitat: 'Savanna, Forests',
+    },
+    {
+      name: 'African Elephant',
+      species: 'Loxodonta africana',
+      diet: 'Herbivore',
+      habitat: 'Savanna, Forests',
+    },
+    // ... more items
+  ]
 const rules = [value => checkApi(value)]
 
 const loading = ref(false)
@@ -63,4 +95,6 @@ async function checkApi(userName) {
 }
 </script>
 
-<style lang="scss" scoped></style>
+<style scoped>
+
+</style>
