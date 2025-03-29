@@ -1,7 +1,7 @@
 <template>
   <div class="pt-5" style="height: 900px; width: 100%;">
 
-    <div style="width: 400px; display: flex;text-align: start;">
+    <div style="width: 400px; display: flex;text-align: start;" ref="msgArea">
       <v-alert v-model="alert" border="start" close-label="Close Alert" density="compact" type="error" title="Error"
         variant="tonal" closable>
         Aenean imperdiet. Quisque id odio. Cras dapibus. Pellentesque ut neque. Cras dapibus.
@@ -10,21 +10,18 @@
     </div>
 
     <div style="width: 400px; display: flex;text-align: start;">
-      <v-alert density="compact" border="start"
-        text="Lorem ipsum dolor sit amet consectetur adipisicing elit."
+      <v-alert density="compact" border="start" text="Lorem ipsum dolor sit amet consectetur adipisicing elit."
         title="Alert title" type="success" closable></v-alert>
     </div>
     <div style="width: 400px; display: flex;text-align: start;">
-      <v-alert density="compact" border="start"
-        text="Lorem ipsum dolor sit amet consectetur adipisicing elit."
+      <v-alert density="compact" border="start" text="Lorem ipsum dolor sit amet consectetur adipisicing elit."
         title="Alert title" type="error" closable></v-alert>
     </div>
     <div style="width: 400px; display: flex;text-align: start;">
-      <v-alert density="compact" border="start"
-        text="Lorem ipsum dolor sit amet consectetur adipisicing elit."
+      <v-alert density="compact" border="start" text="Lorem ipsum dolor sit amet consectetur adipisicing elit."
         title="Alert title" type="warning" closable></v-alert>
     </div>
-    <v-cart title="form test">
+    <v-cart>
       <v-form validate-on="submit lazy" @submit.prevent="submit">
         <v-card-text>
           <v-sheet class="mx-auto  fill-height text-start text-no-wrap">
@@ -47,20 +44,28 @@
                 <v-text-field v-model="userName" :rules="rules" disabled></v-text-field>
               </v-col>
             </v-row>
-            <v-data-table density="comfortable" :headers="headers" :items="items" item-key="name"></v-data-table>
+            <v-data-table density="comfortable" :headers="headers" :items="items" item-key="name">
+
+              <template v-slot:item.location="{ item }">
+                <div class="text-end">
+                  <v-chip color="primary" :text="item.location" class="text-uppercase" size="small" label></v-chip>
+                </div>
+              </template>
+            </v-data-table>
           </v-sheet>
         </v-card-text>
         <v-card-actions>
         </v-card-actions>
         <div class="mb-2" style="display: flex;">
           <v-spacer />
-        <v-btn :loading="loading" class="mt-2" text="Submit" type="submit" color="primary"></v-btn>
-        <v-spacer />
-        <v-btn :loading="loading" class="mt-2" text="Link" append-icon="mdi-chevron-right" variant="plain" type="submit" color="primary" ></v-btn>
-        <v-spacer />
-        <v-btn color="primary" variant="tonal" >Open full report</v-btn>
-        <v-spacer />
-      </div>
+          <v-btn :loading="loading" class="mt-2" text="Submit" type="submit" color="primary"></v-btn>
+          <v-spacer />
+          <v-btn :loading="loading" class="mt-2" text="Link" append-icon="mdi-chevron-right" variant="plain"
+            type="submit" color="primary"></v-btn>
+          <v-spacer />
+          <v-btn color="primary" variant="tonal">Open full report</v-btn>
+          <v-spacer />
+        </div>
         <v-data-table :items="items"></v-data-table>
         <v-btn :loading="loading" class="mt-2" text="Submit" type="submit" color="primary"></v-btn>
       </v-form>
@@ -72,6 +77,19 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@/utils/apptools'
+
+
+const move = () => {
+  console.log('move')
+}
+const msgArea = useTemplateRef('msgArea')
+console.log(msgArea)
+const stop = useEventListener(msgArea, 'mousemove', move)
+setTimeout(() => {
+  stop()
+}, 2000)
+
 const alert = ref(true)
 const headerProps = {
   // style: { backgroundColor: '#140a9a', color:'#FFF' }
