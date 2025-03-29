@@ -37,10 +37,19 @@ export default createVuetify({
     defaultTheme: "light",
     themes: {
       light: {
+        // colors: {
+        //   background: "#ffffff",
+        //   primary: "#140a9a",
+        //   secondary: '#4c4eca',
+        //   error: '#C62828',
+        // },
         colors: {
-          background: "#ffffff",
-          primary: "#140a9a",
-          secondary: '#4c4eca',
+          background: '#ffffff',
+          outline: '#2b2b38',
+          'outline-variant': '#1b159e',
+          primary: '#140a9a',
+          'on-primary': '#ffffff',
+          secondary: '#1b159e'
         },
       },
     },
