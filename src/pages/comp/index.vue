@@ -67,7 +67,7 @@
           <v-spacer />
         </div>
         <v-data-table :items="items"></v-data-table>
-        <v-btn :loading="loading" class="mt-2" text="Submit" type="submit" color="primary"></v-btn>
+        <v-btn class="mt-2" text="Submit" color="primary" @click="openDialog" />
       </v-form>
 
     </v-cart>
@@ -78,7 +78,17 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@/utils/apptools'
+import { renderDialog } from '@/utils/dialog'
+import Login from '@/pages/comp/login.vue'
 
+const openDialog = () => {
+  const { unmount, instance } = renderDialog(Login, {}, {
+    'max-width': 600,
+    persistent: true,
+    'prepend-icon': 'mdi-dock-top',
+    title: 'Login',
+  })
+}
 
 const move = () => {
   console.log('move')
