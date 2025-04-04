@@ -25,5 +25,6 @@ declare module 'vue-router/auto-routes' {
     '/comp/table1': RouteRecordInfo<'/comp/table1', '/comp/table1', Record<never, never>, Record<never, never>>,
     '/not-found/': RouteRecordInfo<'/not-found/', '/not-found', Record<never, never>, Record<never, never>>,
     '/user/': RouteRecordInfo<'/user/', '/user', Record<never, never>, Record<never, never>>,
+    '/workflow/': RouteRecordInfo<'/workflow/', '/workflow', Record<never, never>, Record<never, never>>,
   }
 }
