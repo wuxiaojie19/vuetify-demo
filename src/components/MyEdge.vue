@@ -8,7 +8,7 @@ const props = defineProps<EdgeProps<CustomEdgeData>>();
 const path = computed(() => getBezierPath(props))
 
 const plusClick = (edgeId: string) => {
-  props.data.events?.edgeClick(props.sourceNode, props.targetNode, edgeId)
+  props.data.events?.edgeClick(props.data.sourceApprovalNode, props.sourceNode, props.targetNode, edgeId)
 }
 </script>
 <script lang="ts">

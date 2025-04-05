@@ -2,9 +2,9 @@
 import type { NodeProps } from '@vue-flow/core'
 import { Handle } from '@vue-flow/core'
 import { Position } from '@vue-flow/core'
-import type { CustomeData } from '@/types/workflow'
+import type { CustomeNodeData } from '@/types/workflow'
 
-const props = defineProps<NodeProps<CustomeData>>()
+const props = defineProps<NodeProps<CustomeNodeData>>()
 
 const nodeClick = (e: MouseEvent) => {
   props.data.events?.nodeClick(e)
@@ -20,7 +20,7 @@ const nodeClick = (e: MouseEvent) => {
       <template v-slot:append>
       </template>
       <v-card-text class="bg-surface-light pt-4">
-        xxx
+        {{id}}
       </v-card-text>
       <v-divider></v-divider>
 
