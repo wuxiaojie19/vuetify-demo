@@ -7,8 +7,11 @@ import type { CustomEdgeData } from '@/types/workflow'
 const props = defineProps<EdgeProps<CustomEdgeData>>();
 const path = computed(() => getBezierPath(props))
 
-const plusClick = (edgeId: string) => {
-  props.data.events?.edgeClick(props.data.sourceApprovalNode, props.sourceNode, props.targetNode, edgeId)
+const plusApprovalClick = (edgeId: string) => {
+  props.data.events?.edgeClick(props.sourceNode, props.targetNode, edgeId, "Approver")
+}
+const plusConditionClick = (edgeId: string) => {
+  props.data.events?.edgeClick(props.sourceNode, props.targetNode, edgeId, "Condition")
 }
 </script>
 <script lang="ts">
@@ -26,7 +29,26 @@ export default {
       position: 'absolute',
       transform: `translate(-50%, -50%) translate(${path[1]}px,${path[2]}px)`,
     }" class="nodrag nopan">
-      <v-btn icon="mdi-plus" size="30" @click="plusClick(id)" />
+
+      <v-speed-dial location="right center" transition="scale-transition">
+        <template v-slot:activator="{ props: activatorProps }">
+          <v-fab v-bind="activatorProps" icon="mdi-plus"></v-fab>
+        </template>
+        <div key="999">
+          <v-tooltip key="000" text="条件を追加" location="bottom">
+            <template v-slot:activator="{ props }">
+              <v-btn key="00" v-bind="props" icon="mdi-alpha-c-box-outline" @click="plusConditionClick(id)"
+                :flat="false" text="条件" />
+            </template>
+          </v-tooltip>
+          <v-tooltip key="111" text="承認者を追加" location="bottom">
+            <template v-slot:activator="{ props }">
+              <v-btn key="1" v-bind="props" icon="mdi-account-box-multiple-outline" @click="plusApprovalClick(id)"
+                :flat="false" text="承認者" />
+            </template>
+          </v-tooltip>
+        </div>
+      </v-speed-dial>
     </div>
   </EdgeLabelRenderer>
 </template>
