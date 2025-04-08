@@ -8,7 +8,7 @@ import MyNode from '@/components/MyNode.vue'
 import MyConditionNode from '@/components/MyConditionNode.vue'
 import MyEdge from '@/components/MyEdge.vue'
 import type { CustomNode, CustomEdge, ApprovalNode, NodeType, ApprovalCondition, } from '@/types/workflow'
-import { createAppandNode, appendApprovalNode, isApprovalConditionNode, refixNodePositon } from '@/types/workflow'
+import { createAppandNode, appendApprovalNode, isApprovalConditionNode, refixNodePositon, useNodeSize } from '@/types/workflow'
 
 const { removeEdges, removeNodes } = useVueFlow()
 
@@ -23,11 +23,7 @@ const approvalNode = ref<ApprovalNode>(createAppandNode({
 }))
 
 appendApprovalNode(approvalNode.value, createAppandNode({
-  nodeType: "End",
-  position: {
-    x: 0,
-    y: 0
-  }
+  nodeType: "End"
 }))
 refixNodePositon(approvalNode.value)
 const nodes = ref<CustomNode[]>([])
@@ -112,13 +108,12 @@ const refreshNodes = (snode: ApprovalNode, tnode: ApprovalNode) => {
         refreshNodes(element, element.next)
       }
     });
-
-    nodes.value.push(...tNodes)
+    pushFlowNode(tNodes)
   } else {
     const edgeType = snode.nodeType === "Applicant" ? "button" : "smoothstep"
     connectNodeEdge(snode, tnode, Position.Bottom, edgeType)
     tNodes.push(createFlowNode(tnode, tnode.nodeType !== "ConditionOperator" ? "custom" : "special"))
-    nodes.value.push(...tNodes)
+    pushFlowNode(tNodes)
     if (tnode.next) {
       refreshNodes(tnode, tnode.next)
     }
@@ -126,6 +121,7 @@ const refreshNodes = (snode: ApprovalNode, tnode: ApprovalNode) => {
 
 }
 const createFlowNode = (anode: ApprovalNode, type: "custom" | "special") => {
+  const { width, height } = useNodeSize(type)
   return {
     id: anode.id,
     type: type,
@@ -136,16 +132,26 @@ const createFlowNode = (anode: ApprovalNode, type: "custom" | "special") => {
           console.log(a)
         }
       },
-      approvalNode: anode
+      approvalNode: anode,
+      width: width,
+      height: height
     },
     position: anode.position,
   }
 }
 
+const pushFlowNode = (cnodes: CustomNode[]) => {
+  cnodes.forEach(element => {
+    if (!nodes.value.find(n => n.id === element.id)) {
+      nodes.value.push(element)
+    }
+  });
+}
+
 watch(approvalNode, () => {
   nodes.value.splice(0)
   edges.value.splice(0)
-  nodes.value.push(createFlowNode(approvalNode.value, "custom"))
+  pushFlowNode([createFlowNode(approvalNode.value, "custom")])
 
   if (approvalNode.value.next) {
     refreshNodes(approvalNode.value, approvalNode.value.next)

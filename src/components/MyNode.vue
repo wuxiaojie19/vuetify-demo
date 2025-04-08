@@ -13,14 +13,15 @@ const nodeClick = (e: MouseEvent) => {
 <template>
   <div>
     <Handle type="target" :position="Position.Top" />
-    <v-card class="mx-auto" :subtitle="data.subtitle" :title="data.title" :flat="false" density="comfortable" min-width="300">
+    <v-card class="mx-auto" :subtitle="data.subtitle" :title="data.title" :flat="false"
+      density="comfortable" :width="data.width" :height="data.height">
       <template v-slot:prepend>
         <v-img :width="20" src="../assets/ODLS_W.png" />
       </template>
       <template v-slot:append>
       </template>
       <v-card-text class="bg-surface-light pt-4">
-        {{id}}
+        {{ id }}
       </v-card-text>
       <v-divider></v-divider>
 

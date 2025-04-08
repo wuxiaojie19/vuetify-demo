@@ -1,11 +1,14 @@
 import type { Node, Edge, CustomEvent } from "@vue-flow/core";
 import { v4 as uuidv4 } from "uuid";
+import { fi } from "vuetify/locale";
 
 export interface CustomeNodeData {
   title: string;
   subtitle?: string;
   events?: CustomEvents;
   approvalNode: ApprovalNode;
+  width: number;
+  height: number;
 }
 
 export interface CustomEvents {
@@ -42,6 +45,18 @@ export type NodeType =
   | "Condition"
   | "End";
 
+export const nodeWidth = 300;
+export const nodeHeight = 150;
+
+export const cnodeWidth = 150;
+export const cnodeHeight = 50;
+
+export function useNodeSize(type: "custom" | "special") {
+  return type === "custom"
+    ? { width: nodeWidth, height: nodeHeight }
+    : { width: cnodeWidth, height: cnodeHeight };
+}
+
 export interface ApprovalNode {
   id: string;
   nodeType: NodeType;
@@ -49,6 +64,8 @@ export interface ApprovalNode {
   position: { x: number; y: number };
   previus?: ApprovalNode;
   next?: ApprovalNode;
+  width: number;
+  height: number;
 }
 
 export interface ApprovalCondition extends ApprovalNode {
@@ -60,6 +77,8 @@ export type AppandNode = {
   nodeType: NodeType;
   title?: string;
   position?: { x: number; y: number };
+  width?: number;
+  height?: number;
 };
 
 export function createAppandNode(appandNode: AppandNode): ApprovalNode {
@@ -77,6 +96,12 @@ export function createAppandNode(appandNode: AppandNode): ApprovalNode {
         ? ""
         : "終了",
     position: appandNode.position || { x: 0, y: 0 },
+    width:
+      appandNode.width ||
+      (appandNode.nodeType === "ConditionOperator" ? cnodeWidth : nodeWidth),
+    height:
+      appandNode.height ||
+      (appandNode.nodeType === "ConditionOperator" ? cnodeHeight : nodeHeight),
   };
   node.title += appandNode.title || "";
   if (appandNode.nodeType === "Condition") {
@@ -107,23 +132,54 @@ export function appendApprovalNode(
 export function isApprovalConditionNode(
   node: ApprovalNode
 ): node is ApprovalCondition {
-  return (<ApprovalCondition>node).condition !== undefined;
+  return node.nodeType === "Condition";
 }
 
 export function refixNodePositon(anode: ApprovalNode): void {
+  const findPriviusNode = (type: NodeType[], pnode?: ApprovalNode) => {
+    if (pnode && type.indexOf(pnode.nodeType) > -1) {
+      return pnode;
+    } else if (pnode === undefined) {
+      return undefined;
+    } else {
+      return findPriviusNode(type, pnode.previus);
+    }
+  };
+
   const setNodePosition = (tnode: ApprovalNode) => {
     if (tnode.next) {
-      tnode.next.position = {
-        x: tnode.position.x,
-        y: tnode.position.y + 250,
-      };
+      if (tnode.next.nodeType == "End") {
+        tnode.next.position.x = 0;
+      } else {
+        let x = 0;
+        if (tnode.nodeType !== "Condition") {
+          x =
+            tnode.next.nodeType === "ConditionOperator"
+              ? tnode.position.x + tnode.width / 2 - tnode.next.width / 2
+              : tnode.position.x;
+        } else {
+          const pnode = findPriviusNode(["ConditionOperator"], tnode.previus);
+          x = pnode ? pnode.position.x : 0;
+        }
+        tnode.next.position.x = x;
+      }
+
+      tnode.next.position.y = tnode.position.y + tnode.height + 120;
+
       if (isApprovalConditionNode(tnode.next)) {
-        const xs = 300;
-        tnode.next.condition.forEach((element, idx) => {
-          const txs = idx == 0 ? tnode.position.x - xs : idx * xs;
+        // const xs = 300;
+        tnode.next.condition.forEach((element, idx, arr) => {
+          let txs = 0;
+          if (idx === 0) {
+            const pnode = findPriviusNode(["Applicant", "Approver"], tnode);
+            txs = pnode ? pnode.position.x - pnode.width : cnodeWidth;
+          } else {
+            txs = arr[idx - 1].position.x + arr[idx - 1].width * 2;
+          }
+          const y = (tnode.next?.position.y || 0) - 100
           element.position = {
             x: txs,
-            y: tnode.next?.position.y || 0,
+            y: y,
           };
         });
       }
