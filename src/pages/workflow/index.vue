@@ -22,9 +22,10 @@ const approvalNode = ref<ApprovalNode>(createAppandNode({
   }
 }))
 
-appendApprovalNode(approvalNode.value, createAppandNode({
+const endApprovalNode = createAppandNode({
   nodeType: "End"
-}))
+})
+appendApprovalNode(approvalNode.value, endApprovalNode)
 refixNodePositon(approvalNode.value)
 const nodes = ref<CustomNode[]>([])
 const edges = ref<CustomEdge[]>([])
@@ -41,7 +42,7 @@ const edgeClick = (source: CustomNode, target: CustomNode, edgeId: string, nodeT
     }
     const aNode = createAppandNode({ nodeType: nodeType });
     const cNode = aNode as ApprovalCondition
-    cNode.condition = initConditionArr(nodeType, target.data?.approvalNode)
+    cNode.condition = initConditionArr(nodeType, target.data?.approvalNode, endApprovalNode)
     appendApprovalNode(sourceNode, aNode)
   } else {
     const aNode = createAppandNode({ nodeType: nodeType });
@@ -50,7 +51,7 @@ const edgeClick = (source: CustomNode, target: CustomNode, edgeId: string, nodeT
   refixNodePositon(approvalNode.value)
 }
 
-const initConditionArr = (nodeType: NodeType, nextApprovalNode?: ApprovalNode) => {
+const initConditionArr = (nodeType: NodeType, nextApprovalNode?: ApprovalNode, endApprovalNode?: ApprovalNode) => {
 
   const cNodeChild1 = createAppandNode({
     nodeType: nodeType,
@@ -61,7 +62,7 @@ const initConditionArr = (nodeType: NodeType, nextApprovalNode?: ApprovalNode) =
     nodeType: nodeType,
     title: " - デフォルト"
   })
-  cNodeChild2.next = nextApprovalNode
+  cNodeChild2.next = endApprovalNode || nextApprovalNode
   return [cNodeChild1, cNodeChild2]
 }
 
