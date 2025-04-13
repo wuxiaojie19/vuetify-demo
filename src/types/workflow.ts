@@ -1,6 +1,5 @@
 import type { Node, Edge, CustomEvent } from "@vue-flow/core";
 import { v4 as uuidv4 } from "uuid";
-import { fi } from "vuetify/locale";
 
 export interface CustomeNodeData {
   title: string;
@@ -30,7 +29,7 @@ export interface CustomEdgeEvents {
     source: CustomNode,
     target: CustomNode,
     edgeId: string,
-    nodeType: "Approver" | "Condition"
+    nodeType: "Approver" | "ConditionGroup"
   ) => void;
   [key: string]: CustomEvent;
 }
@@ -41,8 +40,10 @@ export type CustomEdge = Edge<CustomEdgeData>;
 export type NodeType =
   | "Applicant"
   | "Approver"
-  | "ConditionOperator"
+  | "ConditionGroupStart"
   | "Condition"
+  | "ConditionGroup"
+  | "ConditionGroupEnd"
   | "End";
 
 export const nodeWidth = 300;
@@ -51,7 +52,9 @@ export const nodeHeight = 150;
 export const cnodeWidth = 150;
 export const cnodeHeight = 50;
 
-export function useNodeSize(type: "custom" | "special") {
+export type CustomNodeType = "custom" | "special" | "specialEnd";
+
+export function useNodeSize(type: CustomNodeType) {
   return type === "custom"
     ? { width: nodeWidth, height: nodeHeight }
     : { width: cnodeWidth, height: cnodeHeight };
@@ -62,14 +65,23 @@ export interface ApprovalNode {
   nodeType: NodeType;
   title: string;
   position: { x: number; y: number };
-  previus?: ApprovalNode;
+  previus?: Set<ApprovalNode>;
   next?: ApprovalNode;
   width: number;
   height: number;
+  parent?: ApprovalNode;
 }
 
-export interface ApprovalCondition extends ApprovalNode {
+export interface ConditionGroup extends ApprovalNode {
   condition: ApprovalNode[];
+}
+
+export interface ConditionGroupEnd extends ApprovalNode {
+  conditionGroupStart: ConditionGroupStart;
+}
+
+export interface ConditionGroupStart extends ApprovalNode {
+  conditionGroupEnd: ConditionGroupEnd;
 }
 
 export type AppandNode = {
@@ -79,112 +91,194 @@ export type AppandNode = {
   position?: { x: number; y: number };
   width?: number;
   height?: number;
+  parent?: ApprovalNode;
 };
 
 export function createAppandNode(appandNode: AppandNode): ApprovalNode {
+  const titleMap = {
+    Applicant: "申請者",
+    Approver: "承認",
+    Condition: "条件",
+    ConditionGroupStart: "条件を追加",
+    ConditionGroup: "条件グループ",
+    ConditionGroupEnd: "条件グループEND",
+    End: "End",
+  } as { [key in NodeType]: string };
   const node = {
     id: uuidv4(),
     nodeType: appandNode.nodeType,
-    title:
-      appandNode.nodeType === "Applicant"
-        ? "申請者"
-        : appandNode.nodeType === "Approver"
-        ? "承認"
-        : appandNode.nodeType === "Condition"
-        ? "条件"
-        : appandNode.nodeType === "ConditionOperator"
-        ? ""
-        : "終了",
+    title: titleMap[appandNode.nodeType],
     position: appandNode.position || { x: 0, y: 0 },
     width:
       appandNode.width ||
-      (appandNode.nodeType === "ConditionOperator" ? cnodeWidth : nodeWidth),
+      (appandNode.nodeType === "ConditionGroupStart" ? cnodeWidth : nodeWidth),
     height:
       appandNode.height ||
-      (appandNode.nodeType === "ConditionOperator" ? cnodeHeight : nodeHeight),
+      (appandNode.nodeType === "ConditionGroupStart"
+        ? cnodeHeight
+        : nodeHeight),
+    previus: new Set<ApprovalNode>(),
   };
   node.title += appandNode.title || "";
-  if (appandNode.nodeType === "Condition") {
-    (<ApprovalCondition>node).condition = [];
+  if (appandNode.nodeType === "ConditionGroup") {
+    (<ConditionGroup>node).condition = [];
   }
   return node;
 }
 
 export function appendApprovalNode(
-  source?: ApprovalNode,
-  anode?: ApprovalNode
+  source: ApprovalNode,
+  anode: ApprovalNode | ConditionGroup,
+  cgEndNode?: ApprovalNode,
+  endApprovalNode?: ApprovalNode
 ) {
   if (!source || !anode) {
     return;
   }
   if (!source.next) {
     source.next = anode;
-    anode.previus = source;
+    anode.previus = new Set<ApprovalNode>().add(source);
   } else {
     const tmp = source.next;
     source.next = anode;
     anode.next = tmp;
-    anode.previus = source;
-    anode.next.previus = anode;
+    tmp.previus?.delete(source);
+    if (isConditionGroup(anode)) {
+      anode.next = cgEndNode;
+      cgEndNode!.next = endApprovalNode!;
+      cgEndNode!.next.previus?.add(cgEndNode!);
+
+      const firstC = anode.condition[0];
+      const lastC = anode.condition[anode.condition.length - 1];
+      firstC.next = cgEndNode;
+      lastC.next = cgEndNode;
+      lastC.next?.previus?.add(lastC);
+      firstC.next?.previus?.add(firstC);
+      firstC.previus = source.previus;
+    } else {
+      anode.next.previus?.add(anode);
+      anode.previus = new Set<ApprovalNode>().add(source);
+    }
   }
 }
 
-export function isApprovalConditionNode(
-  node: ApprovalNode
-): node is ApprovalCondition {
-  return node.nodeType === "Condition";
+export function isConditionGroup(node: ApprovalNode): node is ConditionGroup {
+  return node.nodeType === "ConditionGroup";
 }
 
-export function refixNodePositon(anode: ApprovalNode): void {
-  const findPriviusNode = (type: NodeType[], pnode?: ApprovalNode) => {
-    if (pnode && type.indexOf(pnode.nodeType) > -1) {
-      return pnode;
-    } else if (pnode === undefined) {
-      return undefined;
-    } else {
-      return findPriviusNode(type, pnode.previus);
+export function findPriviusNode(type: NodeType[], pnode?: ApprovalNode) {
+  if (pnode && type.indexOf(pnode.nodeType) > -1) {
+    return pnode;
+  } else if (pnode === undefined || pnode.previus === undefined) {
+    return undefined;
+  } else {
+    findPriviusNode(type, [...pnode.previus][0]);
+  }
+}
+
+export function refixNodePositon(rootNode: ApprovalNode): void {
+  function getCenterOfPreviusXY(
+    pNode: ApprovalNode,
+    tNode: ApprovalNode
+  ): { x: number; y: number } {
+    const x =
+      tNode.nodeType === "ConditionGroupStart"
+        ? pNode.position.x + pNode.width / 2 - tNode.width / 2
+        : pNode.position.x;
+    const y =
+      (tNode.nodeType === "ConditionGroupStart" ? 100 : 130) +
+      pNode.position.y +
+      pNode.height;
+
+    return { x, y };
+  }
+
+  function getLeftOfPreviusXY(
+    pNode: ApprovalNode,
+    tNode: ApprovalNode
+  ): { x: number; y: number } {
+    let bnode = pNode;
+    if (["ConditionGroupStart"].includes(pNode.nodeType)) {
+      bnode = findPriviusNode(["Applicant", "Approver", "Condition"], pNode)!;
     }
-  };
 
-  const setNodePosition = (tnode: ApprovalNode) => {
-    if (tnode.next) {
-      if (tnode.next.nodeType == "End") {
-        tnode.next.position.x = 0;
-      } else {
-        let x = 0;
-        if (tnode.nodeType !== "Condition") {
-          x =
-            tnode.next.nodeType === "ConditionOperator"
-              ? tnode.position.x + tnode.width / 2 - tnode.next.width / 2
-              : tnode.position.x;
-        } else {
-          const pnode = findPriviusNode(["ConditionOperator"], tnode.previus);
-          x = pnode ? pnode.position.x : 0;
-        }
-        tnode.next.position.x = x;
+    const x = bnode.position.x - bnode.width;
+    const y =
+      (tNode.nodeType === "ConditionGroupStart" ? 100 : 200) +
+      pNode.position.y +
+      pNode.height;
+    return { x, y };
+  }
+  function getCenterForEnd(
+    fNode: ApprovalNode,
+    pNode: ApprovalNode[]
+  ): { x: number; y: number } {
+    const x = fNode.position.x;
+    // let maxY = 0;
+    // pNode.forEach((node) => {
+    //   maxY = Math.max(maxY, node.position.y);
+    // });
+
+    // const y = maxY + 350;
+    let y = 0;
+    if (pNode[0]!.nodeType === "ConditionGroupEnd") {
+      y = pNode[0]!.position.y + pNode[0]!.height;
+    } else {
+      y = pNode[0]!.position.y + 300;
+    }
+    return { x, y };
+  }
+
+  function getCenterOfConditionGroupStart(groupEnd: ConditionGroupEnd): {
+    x: number;
+    y: number;
+  } {
+    const x = groupEnd.conditionGroupStart.position.x;
+    const pnode = [...groupEnd.previus!][0];
+    const y = pnode.position.y + pnode.height + 250;
+    return { x, y };
+  }
+  function setNodePositon(anode: ApprovalNode) {
+    for (
+      let tempNode = anode.next;
+      tempNode !== undefined;
+      tempNode = tempNode.next
+    ) {
+      if (tempNode.nodeType === "Applicant") {
+        continue;
       }
-
-      tnode.next.position.y = tnode.position.y + tnode.height + 120;
-
-      if (isApprovalConditionNode(tnode.next)) {
-        // const xs = 300;
-        tnode.next.condition.forEach((element, idx, arr) => {
-          let txs = 0;
-          if (idx === 0) {
-            const pnode = findPriviusNode(["Applicant", "Approver"], tnode);
-            txs = pnode ? pnode.position.x - pnode.width : cnodeWidth;
+      if (["Approver", "ConditionGroupStart"].includes(tempNode.nodeType)) {
+        tempNode.position = getCenterOfPreviusXY(
+          [...tempNode.previus!][0],
+          tempNode
+        );
+      }
+      if (["ConditionGroupEnd"].includes(tempNode.nodeType)) {
+        tempNode.position = getCenterOfConditionGroupStart(
+          tempNode as ConditionGroupEnd
+        );
+      }
+      if (["ConditionGroup"].includes(tempNode.nodeType)) {
+        const conditionNode = tempNode as ConditionGroup;
+        conditionNode.condition.forEach((cNode, index, nodeArr) => {
+          if (index === 0) {
+            cNode.position = getLeftOfPreviusXY([...cNode.previus!][0], cNode);
           } else {
-            txs = arr[idx - 1].position.x + arr[idx - 1].width * 2;
+            const x =
+              nodeArr[index - 1].position.x + nodeArr[index - 1].width * 2;
+            const y = nodeArr[index - 1].position.y;
+            cNode.position = { x, y };
           }
-          const y = (tnode.next?.position.y || 0) - 100
-          element.position = {
-            x: txs,
-            y: y,
-          };
+          if (cNode.next) {
+            refixNodePositon(cNode);
+          }
         });
       }
-      setNodePosition(tnode.next);
+
+      if (["End"].includes(tempNode.nodeType)) {
+        tempNode.position = getCenterForEnd(anode, [...tempNode.previus!]);
+      }
     }
-  };
-  setNodePosition(anode);
+  }
+  setNodePositon(rootNode);
 }

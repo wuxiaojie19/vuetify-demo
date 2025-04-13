@@ -11,7 +11,7 @@ const plusApprovalClick = (edgeId: string) => {
   props.data.events?.edgeClick(props.sourceNode, props.targetNode, edgeId, "Approver")
 }
 const plusConditionClick = (edgeId: string) => {
-  props.data.events?.edgeClick(props.sourceNode, props.targetNode, edgeId, "Condition")
+  props.data.events?.edgeClick(props.sourceNode, props.targetNode, edgeId, "ConditionGroup")
 }
 </script>
 <script lang="ts">

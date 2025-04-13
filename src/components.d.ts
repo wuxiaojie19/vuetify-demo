@@ -8,14 +8,16 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppFooter: typeof import('./components/AppFooter.vue')['default']
-    copy: typeof import('./components/MyNode copy.vue')['default']
+    copy: typeof import('./components/MyConditionNode copy.vue')['default']
     CustomEdge: typeof import('./components/CustomEdge.vue')['default']
     CustomeNode: typeof import('./components/MyNode.vue')['default']
     Dialog: typeof import('./components/common/Dialog.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     MyConditionNode: typeof import('./components/MyConditionNode.vue')['default']
+    MyConditionNodeEnd: typeof import('./components/MyConditionNodeEnd.vue')['default']
     MyEdge: typeof import('./components/MyEdge.vue')['default']
     MyNode: typeof import('./components/MyNode.vue')['default']
+    MySmoothStepEdge: typeof import('./components/MySmoothStepEdge.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

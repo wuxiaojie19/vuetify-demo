@@ -6,9 +6,11 @@ import { Background } from '@vue-flow/background'
 import { MiniMap } from '@vue-flow/minimap'
 import MyNode from '@/components/MyNode.vue'
 import MyConditionNode from '@/components/MyConditionNode.vue'
+import MyConditionNodeEnd from '@/components/MyConditionNodeEnd.vue'
 import MyEdge from '@/components/MyEdge.vue'
-import type { CustomNode, CustomEdge, ApprovalNode, NodeType, ApprovalCondition, } from '@/types/workflow'
-import { createAppandNode, appendApprovalNode, isApprovalConditionNode, refixNodePositon, useNodeSize } from '@/types/workflow'
+import MySmoothStepEdge from '@/components/MySmoothStepEdge.vue'
+import type { CustomNode, CustomEdge, ApprovalNode, NodeType, ConditionGroup, ConditionGroupEnd, ConditionGroupStart, CustomNodeType } from '@/types/workflow'
+import { createAppandNode, appendApprovalNode, isConditionGroup, refixNodePositon, useNodeSize } from '@/types/workflow'
 
 const { removeEdges, removeNodes } = useVueFlow()
 
@@ -33,36 +35,47 @@ const edges = ref<CustomEdge[]>([])
 
 const edgeClick = (source: CustomNode, target: CustomNode, edgeId: string, nodeType: NodeType) => {
 
-  if (nodeType === "Condition") {
-    let sourceNode = source.data?.approvalNode;
-    if (source.data?.approvalNode.nodeType === "Approver" || source.data?.approvalNode.nodeType === "Applicant") {
-      const coNode = createAppandNode({ nodeType: "ConditionOperator" });
-      appendApprovalNode(source.data?.approvalNode, coNode)
-      sourceNode = coNode
+  let sourceNode = source.data!.approvalNode;
+  if (nodeType === "ConditionGroup") {
+    const cgStartNode = createAppandNode({ nodeType: "ConditionGroupStart" }) as ConditionGroupStart;
+    if (["Approver", "Applicant"].includes(sourceNode?.nodeType as string)) {
+      appendApprovalNode(sourceNode, cgStartNode)
+      sourceNode = cgStartNode
+    } else if (sourceNode.nodeType === "Condition") {
+      appendApprovalNode(sourceNode!, cgStartNode)
+      sourceNode = cgStartNode
     }
-    const aNode = createAppandNode({ nodeType: nodeType });
-    const cNode = aNode as ApprovalCondition
-    cNode.condition = initConditionArr(nodeType, target.data?.approvalNode, endApprovalNode)
-    appendApprovalNode(sourceNode, aNode)
+    sourceNode!.next = target.data?.approvalNode
+
+    const cgNode = createAppandNode({ nodeType: nodeType }) as ConditionGroup;
+    cgNode.condition = initConditionArr(cgNode, "Condition")
+
+
+    const cgEndNode = createAppandNode({ nodeType: "ConditionGroupEnd" }) as ConditionGroupEnd;
+    cgEndNode.conditionGroupStart = cgStartNode
+    cgStartNode.conditionGroupEnd = cgEndNode
+
+    appendApprovalNode(sourceNode!, cgNode, cgEndNode, endApprovalNode)
   } else {
     const aNode = createAppandNode({ nodeType: nodeType });
-    appendApprovalNode(source.data?.approvalNode, aNode)
+    appendApprovalNode(sourceNode, aNode)
   }
   refixNodePositon(approvalNode.value)
+  console.log(approvalNode.value)
 }
 
-const initConditionArr = (nodeType: NodeType, nextApprovalNode?: ApprovalNode, endApprovalNode?: ApprovalNode) => {
+const initConditionArr = (cNode: ConditionGroup, nodeType: NodeType) => {
 
   const cNodeChild1 = createAppandNode({
     nodeType: nodeType,
-    title: " - 1"
+    title: " - 1",
+    parent: cNode
   })
-  cNodeChild1.next = nextApprovalNode
   const cNodeChild2 = createAppandNode({
     nodeType: nodeType,
-    title: " - デフォルト"
+    title: " - デフォルト",
+    parent: cNode
   })
-  cNodeChild2.next = endApprovalNode || nextApprovalNode
   return [cNodeChild1, cNodeChild2]
 }
 
@@ -80,22 +93,26 @@ const createEdge = (sourceApprovalNode: ApprovalNode, targetApprovalNode: Approv
       },
       sourceApprovalNode,
       targetApprovalNode,
+    },
+    pathOptions: {
+      offset: 20,
+      borderRadius: 0
     }
   }
 }
 
 const connectNodeEdge = (snode: ApprovalNode, tnode: ApprovalNode, sourceHandleId: string, edgeType?: string) => {
-  const edge = createEdge(snode, tnode, sourceHandleId, edgeType || "button")
+  const edge = createEdge(snode, tnode, sourceHandleId, edgeType || "mysmooth")
   edges.value.push(edge)
 }
 
 const refreshNodes = (snode: ApprovalNode, tnode: ApprovalNode) => {
 
   const tNodes: CustomNode[] = []
-  if (isApprovalConditionNode(tnode)) {
-    const cnode = tnode as ApprovalCondition;
+  if (isConditionGroup(tnode)) {
+    const cnode = tnode as ConditionGroup;
     cnode.condition.forEach((element, idx) => {
-      tNodes.push(createFlowNode(element, element.nodeType !== "ConditionOperator" ? "custom" : "special"))
+      tNodes.push(createFlowNode(element))
       let direction = ""
       if (idx === 0) {
         direction = "source-l"
@@ -104,16 +121,16 @@ const refreshNodes = (snode: ApprovalNode, tnode: ApprovalNode) => {
       } else {
         direction = "source-t"
       }
-      connectNodeEdge(snode, element, direction, 'smoothstep')
+      connectNodeEdge(snode, element, direction, 'mysmooth')
       if (element.next) {
         refreshNodes(element, element.next)
       }
     });
     pushFlowNode(tNodes)
   } else {
-    const edgeType = snode.nodeType === "Applicant" ? "button" : "smoothstep"
-    connectNodeEdge(snode, tnode, Position.Bottom, edgeType)
-    tNodes.push(createFlowNode(tnode, tnode.nodeType !== "ConditionOperator" ? "custom" : "special"))
+    // const edgeType = snode.nodeType === "Applicant" || tnode.nodeType === "ConditionGroupStart" ? "button" : "mysmooth" //smoothstep / mysmooth
+    connectNodeEdge(snode, tnode, Position.Bottom, "mysmooth")
+    tNodes.push(createFlowNode(tnode))
     pushFlowNode(tNodes)
     if (tnode.next) {
       refreshNodes(tnode, tnode.next)
@@ -121,8 +138,15 @@ const refreshNodes = (snode: ApprovalNode, tnode: ApprovalNode) => {
   }
 
 }
-const createFlowNode = (anode: ApprovalNode, type: "custom" | "special") => {
-  const { width, height } = useNodeSize(type)
+const createFlowNode = (anode: ApprovalNode) => {
+  const nodeMap = {
+    ConditionGroupStart: "special",
+    ConditionGroupEnd: "specialEnd",
+  } as { [key in NodeType]: string }
+
+  const type = nodeMap[anode.nodeType] || "custom"
+
+  const { width, height } = useNodeSize(type as CustomNodeType)
   return {
     id: anode.id,
     type: type,
@@ -130,7 +154,7 @@ const createFlowNode = (anode: ApprovalNode, type: "custom" | "special") => {
       title: anode.title,
       events: {
         nodeClick: (a: MouseEvent) => {
-          console.log(a)
+          // console.log(a)
         }
       },
       approvalNode: anode,
@@ -152,7 +176,7 @@ const pushFlowNode = (cnodes: CustomNode[]) => {
 watch(approvalNode, () => {
   nodes.value.splice(0)
   edges.value.splice(0)
-  pushFlowNode([createFlowNode(approvalNode.value, "custom")])
+  pushFlowNode([createFlowNode(approvalNode.value)])
 
   if (approvalNode.value.next) {
     refreshNodes(approvalNode.value, approvalNode.value.next)
@@ -160,14 +184,12 @@ watch(approvalNode, () => {
 
 }, { immediate: true, deep: true })
 
-console.log('nodes.value', nodes.value)
-console.log('edges.value', edges.value)
 </script>
 
 <template>
   <div style="width: calc(100%)+0px;height: 100VH;">
     <VueFlow :nodes="nodes" :fit-view-on-init="true" :max-zoom="0.8" :edges="edges" :pan-on-scroll="true"
-      :zoom-on-double-click="false" :zoom-on-scroll="false" :pan-on-drag="false" :zoom-on-pinch="false"
+      :zoom-on-double-click="false" :zoom-on-scroll="false" :pan-on-drag="true" :zoom-on-pinch="true"
       :prevent-scrolling="false">
       <template #node-custom="customNodeProps">
         <MyNode v-bind="customNodeProps" />
@@ -175,12 +197,17 @@ console.log('edges.value', edges.value)
       <template #node-special="specialNodeProps">
         <MyConditionNode v-bind="specialNodeProps" />
       </template>
+      <template #node-specialEnd="specialNodeProps">
+        <MyConditionNodeEnd v-bind="specialNodeProps" />
+      </template>
       <template #edge-button="buttonEdgeProps">
         <MyEdge v-bind="buttonEdgeProps" />
       </template>
-
       <template #edge-custom="customEdgeProps">
         <MyEdge v-bind="customEdgeProps" />
+      </template>
+      <template #edge-mysmooth="customEdgeProps">
+        <MySmoothStepEdge v-bind="customEdgeProps" />
       </template>
       <MiniMap position="top-right" />
       <Background />

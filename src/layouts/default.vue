@@ -53,7 +53,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 
-const drawer = ref(true)
+const drawer = ref(false)
 
 const items = ref([
   {
