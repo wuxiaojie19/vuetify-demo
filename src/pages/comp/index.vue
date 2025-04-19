@@ -44,13 +44,8 @@
                 <v-text-field v-model="userName" :rules="rules" disabled></v-text-field>
               </v-col>
             </v-row>
-            <v-data-table density="comfortable" :headers="headers" :items="items" item-key="name">
+            <v-data-table v-column-resize2="headers"  density="comfortable" :headers="headers" :items="items" item-key="name">
 
-              <template v-slot:item.location="{ item }">
-                <div class="text-end">
-                  <v-chip color="primary" :text="item.location" class="text-uppercase" size="small" label></v-chip>
-                </div>
-              </template>
             </v-data-table>
           </v-sheet>
         </v-card-text>
@@ -66,7 +61,6 @@
           <v-btn color="primary" variant="tonal">Open full report</v-btn>
           <v-spacer />
         </div>
-        <v-data-table :items="items"></v-data-table>
         <v-btn class="mt-2" text="Submit" color="primary" @click="openDialog" />
       </v-form>
 
@@ -105,8 +99,34 @@ const headerProps = {
   // style: { backgroundColor: '#140a9a', color:'#FFF' }
 }
 const headers = [
-  { title: 'Pyramid', value: 'name' },
-  { title: 'Location', value: 'location' },
+  {
+    title: 'Pyramid', value: 'name', key: 'Pyramid',
+
+    removable: true,
+    nowrap: true,
+    minWidth: 200,
+    maxWidth: 200,
+    headerProps: {
+      data: 'Pyramid',
+    },
+    cellProps: {
+      data: 'Pyramid',
+    },
+  },
+  {
+    title: 'Location', value: 'location', key: 'location',
+
+    removable: true,
+    nowrap: true,
+    minWidth: 200,
+    maxWidth: 200,
+    headerProps: {
+      data: 'location',
+    },
+    cellProps: {
+      data: 'location',
+    },
+  },
   { title: 'Construction Date', value: 'constructionDate' },
   {
     title: 'Dimensions1',
@@ -200,63 +220,4 @@ async function checkApi(userName) {
 </script>
 
 <style>
-.v-table .v-table__wrapper>table>thead>tr>th {
-  border-bottom: 1px solid #afafaf !important;
-  background-color: #efeff7;
-}
-
-/* .v-data-table .v-data-table__th {
-  background-color: #e8ebff;
-} */
-/* 主色调定义 */
-:root {
-  --primary-color: #140a9a;
-  --primary-light: #e8ebff;
-  --primary-lighter: #f5f7ff;
-}
-
-/* 表格整体样式 */
-.custom-data-table {
-  border: 1px solid rgba(20, 10, 154, 0.2);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-/* 表头样式 */
-.custom-header {
-  background-color: var(--primary-color) !important;
-}
-
-.custom-header th {
-  color: white !important;
-  font-size: 0.875rem;
-  letter-spacing: 0.5px;
-}
-
-/* 行样式 */
-.custom-data-table .custom-row:nth-child(even) {
-  background-color: var(--primary-lighter);
-}
-
-/* 悬停效果 */
-.custom-data-table .custom-row:hover {
-  background-color: var(--primary-light) !important;
-  transition: background-color 0.2s;
-}
-
-/* 边框和分割线 */
-.custom-data-table td,
-.custom-data-table th {
-  border-right: 1px solid #e0e0ff;
-}
-
-.custom-data-table td:last-child,
-.custom-data-table th:last-child {
-  border-right: none;
-}
-
-/* 分页器样式 */
-.custom-data-table .v-data-table-footer {
-  border-top: 1px solid #e0e0ff;
-}
 </style>

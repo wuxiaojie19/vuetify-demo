@@ -61,7 +61,6 @@ const edgeClick = (source: CustomNode, target: CustomNode, edgeId: string, nodeT
     appendApprovalNode(sourceNode, aNode)
   }
   refixNodePositon(approvalNode.value)
-  console.log(approvalNode.value)
 }
 
 const initConditionArr = (cNode: ConditionGroup, nodeType: NodeType) => {

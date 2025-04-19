@@ -1,20 +1,11 @@
 <template>
   <v-app>
-    <v-data-table
-      :headers="headers"
-      :items="items"
-      :items-per-page="5"
-      class="custom-data-table"
-    >
+    <v-data-table :headers="headers" :items="items" :items-per-page="5" class="custom-data-table">
       <!-- 自定义表头样式 -->
       <template #header="{ props }">
         <thead class="custom-header">
           <tr>
-            <th
-              v-for="header in props.headers"
-              :key="header.title"
-              class="text-uppercase font-weight-bold"
-            >
+            <th v-for="header in props.headers" :key="header.title" class="text-uppercase font-weight-bold">
               {{ header.title }}
             </th>
           </tr>
@@ -36,7 +27,9 @@
 <script setup>
 const headers = [
   { title: 'ID', value: 'id' },
-  { title: 'NAME', value: 'name' },
+  {
+    title: 'NAME', value: 'name'
+  },
   { title: 'ROLE', value: 'role' },
   { title: 'STATUS', value: 'status' },
 ];
